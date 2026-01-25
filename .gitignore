@@ -33,3 +33,16 @@ chroma/
 .DS_Store
 .vscode/
 .idea/
+# Large datasets
+data/raw/
+data/**/*.csv
+data/**/*.parquet
+
+# Vector DB artifacts
+rag/chroma_products/
+rag/*.parquet
+rag/**/*.bin
+rag/**/*.sqlite3
+
+# MLflow runs (if created locally)
+mlruns/
