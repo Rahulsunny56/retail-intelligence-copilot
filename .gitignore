@@ -1,0 +1,35 @@
+# -------------------
+# Python
+# -------------------
+__pycache__/
+*.pyc
+*.pyo
+
+# -------------------
+# Virtual Environments
+# -------------------
+.venv/
+venv/
+conda/
+.env
+.env.*
+
+# -------------------
+# ML / Experimentation
+# -------------------
+mlruns/
+chroma/
+*.sqlite
+*.db
+
+# -------------------
+# Logs
+# -------------------
+*.log
+
+# -------------------
+# OS / Editor
+# -------------------
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Retail Promo Agent Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; max-width: 980px; }
+      .row { display: flex; gap: 12px; }
+      input { flex: 1; padding: 10px; font-size: 16px; }
+      button { padding: 10px 14px; font-size: 16px; cursor: pointer; }
+      pre { background: #111; color: #0f0; padding: 14px; overflow: auto; border-radius: 10px; }
+      .card { border: 1px solid #ddd; border-radius: 12px; padding: 14px; margin-top: 14px; }
+      .muted { color: #666; font-size: 13px; }
+      .title { font-size: 18px; font-weight: 700; }
+      .pill { display: inline-block; background:#f2f2f2; padding: 4px 8px; border-radius: 999px; margin-right: 6px; font-size: 12px; }
+    </style>
+  </head>
+
+  <body>
+    <h2>Retail Intelligence Copilot — Promo Agent</h2>
+    <p class="muted">Type a product query (e.g., avocado, eggs, yogurt) → get Top 3 promo bundles.</p>
+
+    <div class="row">
+      <input id="q" placeholder="Try: avocado" value="avocado" />
+      <button onclick="run()">Get bundles</button>
+    </div>
+
+    <div id="status" class="muted" style="margin-top:10px;"></div>
+    <div id="results"></div>
+
+    <script>
+      function escapeHtml(s) {
+        return (s || "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+      }
+
+      async function run() {
+        const q = document.getElementById("q").value.trim();
+        const status = document.getElementById("status");
+        const results = document.getElementById("results");
+        results.innerHTML = "";
+        status.textContent = "Loading...";
+
+        try {
+          const res = await fetch(`/promo-recommendations?query=${encodeURIComponent(q)}`);
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(`HTTP ${res.status}: ${txt}`);
+          }
+          const data = await res.json();
+          status.textContent = `Done. Query="${data.query}"`;
+
+          // If you return only final_text, show that. If bundles exist, show cards.
+          if (data.bundles && data.bundles.length > 0) {
+            data.bundles.forEach((b, idx) => {
+              const items = (b.items || []).map(it =>
+                `<li>${escapeHtml(it.product_name)} <span class="muted">(affinity=${it.affinity}, rr=${it.reorder_rate}, units=${it.units})</span></li>`
+              ).join("");
+
+              const placements = (b.placement || []).map(p => `<span class="pill">${escapeHtml(p)}</span>`).join("");
+
+              results.innerHTML += `
+                <div class="card">
+                  <div class="title">Bundle #${idx + 1} — score ${b.bundle_score.toFixed(1)}</div>
+                  <div class="muted">Anchor: ${escapeHtml(b.anchor_product_name)} (ID ${b.anchor_product_id})</div>
+                  <div style="margin-top:8px;"><b>Theme:</b> ${escapeHtml(b.theme)}</div>
+                  <div><b>Offer:</b> ${escapeHtml(b.offer)}</div>
+                  <div><b>Confidence:</b> ${escapeHtml(b.confidence)} &nbsp; | &nbsp; <b>Impact:</b> ${escapeHtml(b.expected_impact)}</div>
+                  <div style="margin-top:8px;"><b>Placement:</b> ${placements}</div>
+                  <div style="margin-top:10px;"><b>Add-ons:</b><ul>${items}</ul></div>
+                </div>
+              `;
+            });
+          } else {
+            // fallback: show final_text
+            results.innerHTML = `<pre>${escapeHtml(data.final_text || "(no output)")}</pre>`;
+          }
+        } catch (e) {
+          status.textContent = "Error";
+          results.innerHTML = `<pre>${escapeHtml(String(e))}</pre>`;
+        }
+      }
+
+      // auto-run once
+      run();
+    </script>
+  </body>
+</html>
