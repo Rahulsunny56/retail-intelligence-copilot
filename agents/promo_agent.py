@@ -1,3 +1,12 @@
+"""
+Promo Agent responsible for generating bundle-based promotion recommendations.
+
+This module implements the core logic for:
+- Selecting candidate add-on products using co-purchase affinity
+- Scoring multi-item bundles using relevance, synergy, and diversity constraints
+- Producing both human-readable promotional explanations and structured
+  outputs for downstream UI or API consumption
+"""
 from typing import TypedDict, List, Dict, Any, Optional
 from langgraph.graph import StateGraph, END
 from itertools import combinations
@@ -221,6 +230,26 @@ def score_bundle(anchor: Dict[str, Any], cand: Dict[str, Any], user_query: str) 
 
 
 def respond_node(state: PromoState) -> PromoState:
+    """
+    Finalizes the promotional response by selecting and scoring bundle candidates.
+
+    This agent node evaluates candidate products associated with an anchor product,
+    scores them using user intent and affinity signals, and selects the top-ranked
+    bundle options to construct the final promotional response.
+
+    If no anchor product or candidates are available, the node returns a
+    user-friendly fallback message.
+
+    Args:
+        state (PromoState): Current agent state containing:
+            - anchor_card (dict): Selected anchor product for promotion
+            - candidates (list): Potential bundle products from co-purchase affinity
+            - user_query (str): Original user request or intent
+
+    Returns:
+        PromoState: Updated agent state including the final promotional response
+        or an explanatory fallback message.
+    """
     anchor = state["anchor_card"]
     if not anchor:
         return {**state, "final": "Could not identify an anchor product for promotion. Try a different query."}
@@ -242,6 +271,24 @@ def respond_node(state: PromoState) -> PromoState:
     # 2) Build bundles (anchor + 2 items)
     # We don’t have add-on-to-add-on affinity, so we add a conservative synergy bonus.
     def bundle_score(a: Dict[str, Any], b: Dict[str, Any]) -> float:
+        """
+    Scores a 2-item add-on bundle for a given anchor product.
+
+    The final score combines:
+    - Individual relevance scores of each add-on item vs the anchor and user intent
+    - A synergy term based on the minimum co-purchase count across both add-ons
+      (encourages bundles where both items strongly associate with the anchor)
+
+    Args:
+        anchor (Dict[str, Any]): Anchor product card selected for promotion.
+        a (Dict[str, Any]): First add-on candidate product.
+        b (Dict[str, Any]): Second add-on candidate product.
+        user_query (str): Original user query to capture intent.
+        score_bundle_fn: Function that scores (anchor, candidate, user_query) relevance.
+
+    Returns:
+        float: Final bundle score (higher is better).
+    """
         sa = score_bundle(anchor, a, state["user_query"])
         sb = score_bundle(anchor, b, state["user_query"])
         synergy = 0.30 * min(a.get("co_purchase_count", 0), b.get("co_purchase_count", 0))

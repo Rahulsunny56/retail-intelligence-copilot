@@ -53,8 +53,8 @@
           // If you return only final_text, show that. If bundles exist, show cards.
           if (data.bundles && data.bundles.length > 0) {
             data.bundles.forEach((b, idx) => {
-              const items = (b.items || []).map(it =>
-                `<li>${escapeHtml(it.product_name)} <span class="muted">(affinity=${it.affinity}, rr=${it.reorder_rate}, units=${it.units})</span></li>`
+              const items = (b.add_ons || b.items || []).map(it =>
+                `<li>${escapeHtml(it.product_name)} <span class="muted">(affinity=${it.co_purchase_count}, rr=${it.reorder_rate}, units=${it.total_units})</span></li>`
               ).join("");
 
               const placements = (b.placement || []).map(p => `<span class="pill">${escapeHtml(p)}</span>`).join("");
@@ -62,7 +62,7 @@
               results.innerHTML += `
                 <div class="card">
                   <div class="title">Bundle #${idx + 1} — score ${b.bundle_score.toFixed(1)}</div>
-                  <div class="muted">Anchor: ${escapeHtml(b.anchor_product_name)} (ID ${b.anchor_product_id})</div>
+                  <div class="muted">Anchor: ${escapeHtml(b.anchor?.product_name)} (ID ${b.anchor?.product_id})</div>
                   <div style="margin-top:8px;"><b>Theme:</b> ${escapeHtml(b.theme)}</div>
                   <div><b>Offer:</b> ${escapeHtml(b.offer)}</div>
                   <div><b>Confidence:</b> ${escapeHtml(b.confidence)} &nbsp; | &nbsp; <b>Impact:</b> ${escapeHtml(b.expected_impact)}</div>

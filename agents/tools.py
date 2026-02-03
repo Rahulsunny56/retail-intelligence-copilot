@@ -56,7 +56,22 @@ def co_purchase_recommendations(
     k: int = 10
 ) -> List[Dict[str, Any]]:
     """
-    Recommend products frequently bought together with a given product_id.
+    Returns products that are most frequently purchased together with a given product.
+
+    This function queries the basket affinity table to identify products
+    that commonly co-occur with the specified product ID and ranks them
+    by co-purchase frequency.
+
+    Args:
+        product_id (int): Product ID for which co-purchase recommendations are generated.
+        k (int, optional): Maximum number of recommended products to return.
+            Defaults to 10.
+
+    Returns:
+        List[Dict[str, Any]]: A list of recommended products containing:
+            - product_id (int): Recommended product identifier
+            - product_name (str): Name of the recommended product
+            - co_purchase_count (int): Number of times products were bought together
     """
     sql = text("""
         WITH pairs AS (
