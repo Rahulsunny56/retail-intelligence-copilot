@@ -44,7 +44,10 @@ jobs:
           PYTHONPATH: .
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  
         run: |
+          rm -f .docgen_cache.json
           python -m agents.repo_bot.docgen
+          echo "===== PREVIEW promo_agent.md ====="
+          sed -n '1,120p' docs/modules/promo_agent.md
 
       # 🔹 Build MkDocs site
       - name: Build MkDocs site
