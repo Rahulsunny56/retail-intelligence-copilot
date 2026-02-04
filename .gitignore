@@ -56,3 +56,5 @@ site/
 
 # GPT-5 docgen cache
 .docgen_cache.json
+.docgen_cache.json
+.env
