@@ -3,12 +3,7 @@ theme:
   name: material
 
 plugins:
-  - search
-  - mkdocstrings:
-      handlers:
-        python:
-          options:
-            show_source: true
+  - search  
 
 nav:
   - Home: index.md
