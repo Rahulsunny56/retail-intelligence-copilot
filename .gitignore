@@ -50,3 +50,9 @@ bfg.jar
 
 .repo_index.json
 site/
+
+# Local secrets
+.env
+
+# GPT-5 docgen cache
+.docgen_cache.json

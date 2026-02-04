@@ -1,12 +1,25 @@
-# repo_chat
+# `repo_chat` Module
 
-_Auto-generated from repo index. Run `python -m agents.repo_bot.docgen` to refresh._
+_Auto-generated documentation. Summaries are produced by GPT-5 and cached to avoid unnecessary re-generation._
 
-### `parse_command`
+## `parse_command`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 12-32)
 - **Called by:** main
 - **Calls:** endswith, lower, startswith, strip
+
+### Purpose
+Parse a user’s repo-bot command into a deterministic mode and argument. It normalizes input and detects explicit modes or a backtick shortcut to drive repository analysis actions.
+
+### Inputs / Outputs
+- Input: user_input (str)
+- Output: (mode, arg) where mode ∈ {"explain", "trace", "where", "ask"} and arg is the remaining text (or "")
+
+### How it connects
+Called by main to route user intent to the right handler. Uses simple string ops (strip, lower, startswith, endswith) to avoid ambiguity and external dependencies.
+
+### Why it matters in this project
+Clear command parsing lets the copilot reliably switch between repo analysis modes, improving orchestration. This speeds up diagnosing and explaining code that underpins retail promotions and recommendations, enabling faster, safer iteration.
 
 ```python
 def parse_command(user_input: str) -> tuple[str, str]:
@@ -31,11 +44,25 @@ def parse_command(user_input: str) -> tuple[str, str]:
 ```
 
 
-### `pick_target_symbol`
+## `pick_target_symbol`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 33-50)
 - **Called by:** main
-- **Calls:** (none found)
+- **Calls:** (none)
+
+### Purpose
+Select the most relevant code symbol for a repo chat query by preferring exact/contained matches (e.g., "respond_node.bundle_score") from already retrieved results, with a fallback to the full index.
+
+### Inputs / Outputs
+- Inputs: query (str), top_matches (List of (score, Chunk)).
+- Output: symbol name (str).
+- Notes: Fallback scan uses a global all_chunks index; matching is substring-based on chunk.symbol.
+
+### How it connects
+Called by main. It does not call other project functions. It first searches the provided top_matches, then falls back to scanning all_chunks to find a matching symbol.
+
+### Why it matters in this project
+Accurately mapping a natural-language query to the right code symbol keeps repo chat grounded. This sharp targeting improves explanations and troubleshooting for promotion rules, recommendation logic, and orchestration components in Retail Intelligence Copilot.
 
 ```python
 def pick_target_symbol(query: str, top_matches: List[Tuple[int, Chunk]]) -> str:
@@ -56,11 +83,24 @@ def pick_target_symbol(query: str, top_matches: List[Tuple[int, Chunk]]) -> str:
 ```
 
 
-### `pick_target_symbol.pick`
+## `pick_target_symbol.pick`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 38-50)
-- **Called by:** pick_target_symbol
+- **Called by:** (not shown)
 - **Calls:** lower
+
+### Purpose
+Select the first code chunk whose symbol contains a given substring, preferring already-retrieved top matches and falling back to a full index. This accelerates symbol resolution during repo chat operations.
+
+### Inputs / Outputs
+- Input: sym_contains (str) — substring to match; compared against c.symbol.lower() (caller should pass lowercase for case-insensitive search).
+- Output: Chunk | None — first matching chunk, or None if not found.
+
+### How it connects
+Lives in agents/repo_bot/repo_chat.py as pick_target_symbol.pick. Reads from top_matches (pre-ranked results) and all_chunks (full index) defined elsewhere, and uses str.lower() for matching.
+
+### Why it matters in this project
+Fast, deterministic symbol picking lets the Repo Bot route actions (inspect, summarize, or modify code) to the correct unit with minimal latency. This supports reliable orchestration when diagnosing or evolving promotion/recommendation logic in Retail Intelligence Copilot.
 
 ```python
 def pick(sym_contains: str) -> Chunk | None:
@@ -76,11 +116,24 @@ def pick(sym_contains: str) -> Chunk | None:
 ```
 
 
-### `simple_rank`
+## `simple_rank`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 51-80)
 - **Called by:** search_chunks
 - **Calls:** lower, startswith
+
+### Purpose
+Rank a repository chunk against a user query so search_chunks can surface the most relevant code/docs. It biases results toward parts of the system used for promotions, recommendations, and orchestration.
+
+### Inputs / Outputs
+- Inputs: Chunk (with text, symbol, path) and a query string.
+- Output: Integer relevance score combining keyword hits and path-based boosts/penalties.
+
+### How it connects
+Called by search_chunks to sort candidates. It normalizes case with lower() and checks paths with startswith() to penalize repo_bot internals and boost promo/graph/tools/sql/rag content.
+
+### Why it matters in this project
+By prioritizing agents/promo_agent.py, agents/tools.py, agents/graph.py, sql/, and rag/, it elevates code and data most useful for building promotions, product recommendations, and orchestration flows, while downranking internal repo_bot code that isn’t helpful to end tasks.
 
 ```python
 def simple_rank(chunk: Chunk, query: str) -> int:
@@ -114,11 +167,27 @@ def simple_rank(chunk: Chunk, query: str) -> int:
 ```
 
 
-### `search_chunks`
+## `search_chunks`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 81-85)
 - **Called by:** main
 - **Calls:** simple_rank, sort
+
+### Purpose
+Ranks repository chunks against a user query and returns the top matches.  
+Used to quickly surface relevant code/config when the Copilot needs context.
+
+### Inputs / Outputs
+Inputs: chunks (List[Chunk]), query (str), top_k (int, default 5).  
+Outputs: List of (score, chunk) tuples, filtered to positive scores and limited to top_k.
+
+### How it connects
+Called by main to fetch the most relevant repo chunks for a query.  
+Internally calls simple_rank for scoring and uses sort to order results.
+
+### Why it matters in this project
+Enables the Copilot to find code that governs promotions, recommendations, and orchestration logic.  
+Grounded retrieval improves accuracy when assembling or explaining retail workflows.
 
 ```python
 def search_chunks(chunks: List[Chunk], query: str, top_k: int = 5) -> List[Tuple[int, Chunk]]:
@@ -128,11 +197,25 @@ def search_chunks(chunks: List[Chunk], query: str, top_k: int = 5) -> List[Tuple
 ```
 
 
-### `find_by_symbol`
+## `find_by_symbol`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 86-104)
 - **Called by:** main
 - **Calls:** endswith, lower, strip
+
+### Purpose
+Find code/documentation chunks by symbol name, prioritizing exact matches and then partial matches. This lets the repo bot quickly resolve a user’s symbol query to the relevant code context.
+
+### Inputs / Outputs
+- Inputs: chunks (List[Chunk]), symbol_query (str), top_k (int, default 5).
+- Output: up to top_k matching Chunk objects, case-insensitive; empty if query is blank or nothing matches.
+- Behavior: trims whitespace, exact match first; otherwise contains/endswith partials.
+
+### How it connects
+Called by main to map a user’s symbol request to indexed chunks. Uses simple string ops (strip, lower, endswith) and returns results for downstream display/analysis steps.
+
+### Why it matters in this project
+Fast, precise symbol lookup helps the Copilot surface the right code for promotion logic, recommendation flows, or orchestration tasks. This reduces noise and accelerates fixes or changes in retail workflows.
 
 ```python
 def find_by_symbol(chunks: List[Chunk], symbol_query: str, top_k: int = 5) -> List[Chunk]:
@@ -155,11 +238,24 @@ def find_by_symbol(chunks: List[Chunk], symbol_query: str, top_k: int = 5) -> Li
 ```
 
 
-### `grep_chunks`
+## `grep_chunks`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 105-115)
 - **Called by:** main
 - **Calls:** lower
+
+### Purpose
+Perform a case-insensitive grep over repository chunks to find where a keyword appears. Returns up to top_k matches, enabling quick narrowing of relevant repo content for the chat agent.
+
+### Inputs / Outputs
+- Inputs: chunks (List[Chunk] with .text), keyword (str), top_k (int, default 25).
+- Output: List[Chunk] containing matches in input order, stopping after top_k.
+
+### How it connects
+Called by main to fetch relevant repo snippets for a user query. Internally only uses lower() for case-insensitive matching.
+
+### Why it matters in this project
+Quickly surfaces code/docs related to promotions, recommendation logic, or orchestration flows. This speeds the Copilot’s ability to answer, guide changes, or trigger workflows without scanning the entire repository.
 
 ```python
 def grep_chunks(chunks: List[Chunk], keyword: str, top_k: int = 25) -> List[Chunk]:
@@ -174,11 +270,24 @@ def grep_chunks(chunks: List[Chunk], keyword: str, top_k: int = 25) -> List[Chun
 ```
 
 
-### `format_chunk`
+## `format_chunk`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 116-120)
 - **Called by:** main
 - **Calls:** splitlines
+
+### Purpose
+Format a repository chunk into a compact, readable string with metadata and a short snippet. This aids presenting code context clearly during repo chat interactions.
+
+### Inputs / Outputs
+- Input: Chunk c with path, kind, symbol, start_line, end_line, and text.
+- Output: A string delimited by --- containing a header and the first 35 lines of c.text.
+
+### How it connects
+Called by main in agents/repo_bot/repo_chat.py to render chunks; internally uses splitlines to cap the snippet length. Provides consistent formatting for downstream display or processing.
+
+### Why it matters in this project
+Concise, structured code snippets keep prompts lean and scannable, improving context quality for the Copilot. This helps quicker understanding and safer changes to promotion logic, recommendation flows, and orchestration components in Retail Intelligence Copilot.
 
 ```python
 def format_chunk(c: Chunk) -> str:
@@ -188,11 +297,28 @@ def format_chunk(c: Chunk) -> str:
 ```
 
 
-### `explain_symbol`
+## `explain_symbol`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 121-163)
 - **Called by:** main
 - **Calls:** endswith, replace, splitlines, strip
+
+### Purpose
+Generate a concise, human-readable explainer for a code symbol using its source chunk and simple call graph. It summarizes what the function is/does and, when relevant, clarifies bundle scoring and synergy logic used for promotions.
+
+### Inputs / Outputs
+- Inputs: query (unused), chunk (with symbol, path, text), callers, callees.  
+- It derives a signature from the first line of chunk.text using splitlines/strip/replace.  
+- Output: a newline-joined Markdown string with “What it is/does” and connection info.
+
+### How it connects
+- Called by: main.  
+- Calls: endswith, replace, splitlines, strip for lightweight parsing.  
+- It embeds callers/callees to show how the symbol fits into the codebase.
+
+### Why it matters in this project
+- If the symbol name includes bundle_score or the code mentions “synergy,” it explains bundle ranking: relevance to anchor + co-purchase synergy.  
+- It notes that respond_node uses this score to rank and show Top 3 promo bundles, improving transparency for promotion and recommendation orchestration.
 
 ```python
 def explain_symbol(query: str, chunk: Chunk, callers: list[str], callees: list[str]) -> str:
@@ -240,11 +366,27 @@ def explain_symbol(query: str, chunk: Chunk, callers: list[str], callees: list[s
 ```
 
 
-### `explain_concept_product_id`
+## `explain_concept_product_id`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 164-222)
 - **Called by:** main
 - **Calls:** find_chunk
+
+### Purpose
+Generate a project-aware explanation of product_id and how it drives promo recommendations. It builds a concise, Markdown summary grounded in actual code locations when available.
+
+### Inputs / Outputs
+- Inputs: all_chunks (repo index of Chunk), top_matches (ranked Chunk hits).
+- Output: A single Markdown string describing product_id, its end-to-end promo flow, code references, and a simple SQL join pattern.
+- Behavior: Prefers symbols from top_matches, then falls back to scanning all_chunks under agents/.
+
+### How it connects
+- Called by: main.
+- Calls: an internal find_chunk to resolve get_product_card, promo_candidates, co_purchase_recommendations in agents/.
+- Embeds resolved paths in the text so downstream UI can show where product_id is used.
+
+### Why it matters in this project
+It ties the retail promotion workflow to real code: anchor selection, product card retrieval, co-purchase candidate generation, and bundle scoring. This keeps explanations consistent, actionable, and aligned with the system’s orchestration around product_id.
 
 ```python
 def explain_concept_product_id(all_chunks: list[Chunk], top_matches: list[tuple[int, Chunk]]) -> str:
@@ -307,11 +449,25 @@ def explain_concept_product_id(all_chunks: list[Chunk], top_matches: list[tuple[
 ```
 
 
-### `explain_concept_product_id.find_chunk`
+## `explain_concept_product_id.find_chunk`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 169-222)
-- **Called by:** explain_concept_product_id
+- **Called by:** (not shown)
 - **Calls:** lower, startswith
+
+### Purpose
+Helper to find a repo index Chunk whose symbol contains a given substring within the agents/ folder. It powers the product_id explainer by linking to real functions used in promotions and recommendations.
+
+### Inputs / Outputs
+- Input: symbol_contains (str)
+- Output: Chunk or None
+- Behavior: Prefer matches from top_matches, then scan all_chunks; case-insensitive symbol check via lower(), and path filter via startswith("agents/").
+
+### How it connects
+It resolves get_product_card, promo_candidates, and co_purchase_recommendations into concrete code locations. Those links are embedded in the generated explanation; if not found, a warning line is added.
+
+### Why it matters in this project
+Grounding the product_id narrative in actual code anchors the promotion flow: product details, candidate generation, and co-purchase retrieval. This reduces guesswork and improves orchestration across agents for retail promotions and recommendations.
 
 ```python
 def find_chunk(symbol_contains: str) -> Chunk | None:
@@ -369,11 +525,24 @@ def find_chunk(symbol_contains: str) -> Chunk | None:
 ```
 
 
-### `main`
+## `main`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 223-390)
-- **Called by:** (not found)
+- **Called by:** (not shown)
 - **Calls:** ArgumentParser, Document, HuggingFaceEmbeddings, Path, PersistentClient, add_argument, apply, build_index, connect, count, cwd, execute, exists, explain_concept_product_id, explain_concept_promo_agent, explain_symbol, find_by_symbol, findall, format_chunk, from_documents, get_collection, grep_chunks, group, input, iterrows, load_csv, load_index, lower, next, parse_args, parse_command, persist, pick_target_symbol, read_parquet, read_sql, rmtree, search, search_chunks, split, strip, text, to_parquet, trace_symbol
+
+### Purpose
+Interactive CLI to chat with the codebase using a prebuilt repo index. It explains symbols, traces caller/callee flows, and greps keywords. Special handlers surface concepts tied to promo_agent and product_id.
+
+### Inputs / Outputs
+Inputs: command-line flags (--reindex, --index) and interactive commands/questions (ask, where, trace, explain).  
+Outputs: console prints of top matches, best-match code chunk, call graph (callers/callees), grep hits, and tailored explanations for promo_agent/product_id.
+
+### How it connects
+Orchestrates indexing and search utilities: build_index/load_index, search_chunks/grep_chunks/find_by_symbol, trace_symbol, format_chunk, pick_target_symbol. Uses explain_symbol and domain explainers (explain_concept_promo_agent, explain_concept_product_id) to produce focused answers, working against the repo at Path.cwd().
+
+### Why it matters in this project
+Lets engineers quickly locate and understand promotion and recommendation code paths, including how promo agents interact and where product_id flows through the system. Speeds debugging and change planning by exposing call graphs and usage hotspots, improving orchestration across Retail Intelligence Copilot components.
 
 ```python
 def main():
@@ -546,11 +715,24 @@ def main():
 ```
 
 
-### `explain_concept_promo_agent`
+## `explain_concept_promo_agent`
 
 - **File:** `agents/repo_bot/repo_chat.py` (lines 391-417)
 - **Called by:** main
 - **Calls:** next
+
+### Purpose
+Generate a concise Markdown explainer for promo_agent, describing how promotion bundle recommendations (anchor + 2 items) are produced. It’s used to communicate the promo flow to users of the repository chat.
+
+### Inputs / Outputs
+- Input: all_chunks (list[Chunk]); it looks for the promo_agent file chunk but does not use it further.
+- Output: A Markdown string summarizing promo_agent’s role, flow, and file locations.
+
+### How it connects
+Called by main; internally uses next to search for agents/promo_agent.py in the provided chunks. It does not execute promo logic—only returns a curated description referencing promo_agent, tools, and graph modules.
+
+### Why it matters in this project
+Gives a clear, quick reference for how promo bundles are formed (anchor selection, co‑purchase candidates, scoring, top 3 diverse bundles). Improves explainability and orchestration of the Retail Intelligence Copilot’s promotion recommendation workflow.
 
 ```python
 def explain_concept_promo_agent(all_chunks: list[Chunk]) -> str:
