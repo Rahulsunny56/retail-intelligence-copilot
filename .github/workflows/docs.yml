@@ -42,6 +42,7 @@ jobs:
       - name: Generate module documentation
         env:
           PYTHONPATH: .
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  
         run: |
           python -m agents.repo_bot.docgen
 
