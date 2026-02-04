@@ -47,3 +47,6 @@ rag/**/*.sqlite3
 # MLflow runs (if created locally)
 mlruns/
 bfg.jar
+
+.repo_index.json
+site/
