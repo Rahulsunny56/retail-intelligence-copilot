@@ -1,11 +1,6 @@
 site_name: Retail Intelligence Copilot Docs
-
 theme:
   name: material
-
-nav:
-  - Home: index.md
-  - API Reference: api.md
 
 plugins:
   - search
@@ -13,5 +8,16 @@ plugins:
       handlers:
         python:
           options:
-            docstring_style: google
             show_source: true
+
+nav:
+  - Home: index.md
+  - API: api.md
+  - Modules:
+      - promo_agent: modules/promo_agent.md
+      - tools: modules/tools.md
+      - graph: modules/graph.md
+      - api_main: modules/main.md
+      - repo_chat: modules/repo_chat.md
+      - repo_index: modules/repo_index.md
+      - repo_trace: modules/repo_trace.md
